@@ -4,6 +4,9 @@ version = "0.1.0"
 description = "Async Python project for bidirectional workorder integration between systems"
 authors = ["Your Name <you@example.com>"]
 package-mode = false
+packages = [
+    { include = "src" }
+]
 
 [build-system]
 requires = ["poetry-core"]
@@ -15,9 +18,16 @@ python-decouple = "3.8"
 loguru = "^0.7.2"
 motor = "^3.1.1"            # Async MongoDB driver
 pytest = "^7.4.0"
+pydantic = "^2.12.5"
 
 [tool.poetry.group.formatting.dependencies]
 black = "^23.3.0"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest-asyncio = "^0.21.0"
+docker = "^7.1.0"
+pytest-cov = "^7.0.0"
 
 [tool.black]
 line-length = 88

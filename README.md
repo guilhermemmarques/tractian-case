@@ -87,6 +87,58 @@ The main objectives of this assesment are to demonstrate:
 
 ## Setting Up The Project
 
+### Important
+This project was built using Python 3.11.14 on Linux Ubuntu. The commands provided are specific to this operating system. If you are using a different OS, please adjust the commands accordingly.
+
+## Architecture Overview
+The architecture of this project was designed with modularity, maintainability, and scalability in mind. Below is an overview of the key architectural decisions:
+
+### 1. **Modularity**
+The system is divided into distinct modules, each responsible for a specific part of the integration flow. This ensures that the code is easy to extend and maintain. The main modules are:
+- **Inbound Module**: Handles reading and processing data from the client's system (JSON files).
+- **Outbound Module**: Manages the extraction of data from TracOS and prepares it for the client's system.
+- **Translation Module**: Contains the logic for translating and normalizing data between the two systems.
+
+### 2. **Layered Design**
+The project follows a layered design to separate concerns:
+- **Models**: Define the data structures for both TracOS and the client's system.
+- **Repositories**: Abstract the database operations (MongoDB) to ensure a clean separation between data access and business logic.
+- **Services**: Implement the core business logic, such as validation, translation, and synchronization.
+- **Modules**: Coordinate the overall workflows for inbound and outbound processes.
+
+### 3. **Environment Configuration**
+The system uses environment variables to configure key parameters, such as:
+- MongoDB connection string (`MONGO_URI`).
+- Input and output directories for JSON files (`DATA_INBOUND_DIR` and `DATA_OUTBOUND_DIR`).
+
+This approach ensures flexibility and allows the system to adapt to different environments (e.g., development, testing, production).
+
+### 4. **Error Handling and Logging**
+The system is designed to handle errors gracefully, including:
+- File I/O errors (e.g., missing or corrupted files).
+- Database connection issues.
+- Validation errors for incoming data.
+
+Logs are implemented to provide clear and actionable information for debugging and monitoring.
+
+### 5. **Scalability**
+The modular design makes it easy to add support for new systems or workflows. For example:
+- Adding a new client integration only requires implementing a new translation layer and extending the existing modules.
+- The database layer is abstracted, allowing for future migration to other database systems if needed.
+
+### 6. **Testability**
+The architecture is designed to facilitate testing at multiple levels:
+- Unit tests for individual components (e.g., models, services).
+- Integration tests for workflows (e.g., inbound and outbound pipelines).
+- End-to-end tests to verify the complete system behavior.
+
+This ensures that the system is robust and behaves as expected under different scenarios.
+
+### 7. **Resilience**
+The system includes mechanisms to handle transient failures, such as retry logic for database operations and graceful handling of invalid data. This ensures that the integration flow remains reliable even in the face of unexpected issues.
+
+By following these principles, the architecture ensures that the system is easy to understand, maintain, and extend, while meeting the functional requirements of the integration.
+
 ### Prerequisites
 
 - Python 3.11+
@@ -97,7 +149,7 @@ The main objectives of this assesment are to demonstrate:
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/guilhermemmarques/integrations-engineering-code-assesment.git
    cd integrations-engineering-code-assesment
    ```
 
@@ -122,34 +174,73 @@ The main objectives of this assesment are to demonstrate:
 
 5. **Configure environment variables**
    ```bash
-   # Create a .env file or export directly in your shell
+   # Create a .env file
    echo "MONGO_URI=mongodb://localhost:27017/tractian" > .env
    echo "DATA_INBOUND_DIR=./data/inbound" >> .env
    echo "DATA_OUTBOUND_DIR=./data/outbound" >> .env
+   echo "MONGO_DATABASE=tractian" >> .env
+   echo "MONGO_COLLECTION=workorders" >> .env
+
+   # Or rename .env.example to .env
+   mv .env.example .env
    ```
 
 ## Project Structure
 
 ```
-integrations-engineering-code-assesment/
-├── docker-compose.yml       # MongoDB container configuration
-├── pyproject.toml           # Poetry configuration
-├── setup.py                 # Setup script for sample data
-├── data/                    # Data directories
-│   ├── inbound/             # Client → TracOS JSON files
-│   └── outbound/            # TracOS → Client JSON files
-├── src/                     # Source code
-│   └── main.py              # Main execution script
-│   ...
-└── tests/                   # Test directory
-|   ...
+tractian-case
+├─ coverage.xml
+├─ data
+│  ├─ inbound
+│  └─ outbound
+├─ docker-compose.yml
+├─ poetry.lock
+├─ pyproject.toml
+├─ pytest.ini
+├─ README.md
+├─ setup.py
+└─ src
+   ├─ conftest.py
+   ├─ main.py
+   ├─ models
+   │  ├─ customer_models.py
+   │  ├─ tests
+   │  │  ├─ test_customer_models.py
+   │  │  ├─ test_tracos_models.py
+   │  ├─ tracOS_models.py
+   │  ├─ __init__.py
+   ├─ modules
+   │  ├─ inbound.py
+   │  ├─ outbound.py
+   │  ├─ __init__.py
+   ├─ repositories
+   │  ├─ mongo
+   │  │  ├─ mongo_workorder_repository.py
+   │  │  ├─ __init__.py
+   │  ├─ repository_factory.py
+   │  ├─ tests
+   │  │  ├─ test_repository_factory.py
+   │  ├─ workorder_repository.py
+   │  ├─ __init__.py
+   ├─ service
+   │  ├─ tests
+   │  │  ├─ test_workorder_service.py
+   │  ├─ workorder_service.py
+   │  ├─ __init__.py
+   ├─ tests
+   │  ├─ test_end_to_end.py
+   │  ├─ test_inbound_pipeline.py
+   │  ├─ test_outbound_pipeline.py
+   └─ __init__.py
+
+
 ```
 
 ## Running the Application
 
 1. **Execute the main script**
    ```bash
-   python src/main.py
+   poetry run python src/main.py
    ```
 
 ## Testing
@@ -159,10 +250,59 @@ Run the tests with:
 poetry run pytest
 ```
 
+If you want to check the test coverage, run:
+```bash
+poetry run pytest --cov=src
+```
+
+This will display the coverage report for each file and the overall total. For example:
+```
+Name                                                   Stmts   Miss  Cover
+--------------------------------------------------------------------------
+src/__init__.py                                            0      0   100%
+src/conftest.py                                           42      6    86%
+src/main.py                                               32      5    84%
+src/models/__init__.py                                     0      0   100%
+src/models/customer_models.py                             16      0   100%
+src/models/tests/test_customer_models.py                  23      0   100%
+src/models/tests/test_tracos_models.py                    24      0   100%
+src/models/tracOS_models.py                               22      0   100%
+src/modules/__init__.py                                    0      0   100%
+src/modules/inbound.py                                    55     18    67%
+src/modules/outbound.py                                   47      8    83%
+src/repositories/__init__.py                               0      0   100%
+src/repositories/mongo/__init__.py                         0      0   100%
+src/repositories/mongo/mongo_workorder_repository.py      41      7    83%
+src/repositories/repository_factory.py                    13      3    77%
+src/repositories/tests/test_repository_factory.py          4      0   100%
+src/repositories/workorder_repository.py                   5      0   100%
+src/service/__init__.py                                    0      0   100%
+src/service/tests/test_workorder_service.py               50      0   100%
+src/service/workorder_service.py                          29      0   100%
+src/tests/test_end_to_end.py                              63      0   100%
+src/tests/test_inbound_pipeline.py                        29      0   100%
+src/tests/test_outbound_pipeline.py                       38      0   100%
+--------------------------------------------------------------------------
+TOTAL                                                    533     47    91%
+```
+
+Additionally, you can generate a `coverage.xml` file to visualize the test coverage in detail. By using tools like the Coverage Gutters extension in your code editor, you can see line-by-line coverage directly in your source files. This helps identify which parts of the code are covered by tests and which are not. Runs:
+```bash
+poetry run pytest --cov=src --cov-report=xml
+```
+
 ## Troubleshooting
 
 - **MongoDB Connection Issues**: Ensure Docker is running and the MongoDB container is up with `docker ps`
 - **Missing Dependencies**: Verify Poetry environment is activated or run `poetry install` again
 - **Permission Issues**: Check file permissions for data directories
+- **Python Issue**: If you encounter the following error when running `main.py`:
+```
+ModuleNotFoundError: No module named 'src'
+```
 
-
+This issue occurs because the Python interpreter cannot locate the `src` module. To resolve this, you need to add the project's root directory to the `PYTHONPATH` environment variable. Run the following command from the root of the project:
+```bash
+PYTHONPATH=$(pwd) poetry run python src/main.py
+```
+This ensures that the Python interpreter includes the current project directory in its module search path, and the `main.py` run correctly

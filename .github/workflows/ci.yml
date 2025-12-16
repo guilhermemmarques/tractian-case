@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  test:
+  test_and_lint:
     runs-on: ubuntu-latest
 
     steps:
@@ -28,6 +28,9 @@ jobs:
 
     - name: Install dependencies
       run: poetry install
+
+    - name: Run lint check with Black
+      run: poetry run black --check .
 
     - name: Run tests
       run: poetry run pytest --cov=src --cov-report=xml
